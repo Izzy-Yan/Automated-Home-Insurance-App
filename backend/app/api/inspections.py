@@ -348,3 +348,39 @@ def upload_inspection_file(
 
     finally:
         file.file.close()
+
+# --------------------------------------------------
+# GET UPLOADED FILES FOR AN INSPECTION
+# --------------------------------------------------
+
+@router.get("/{inspection_id}/uploads")
+def get_inspection_uploads(
+    inspection_id: int,
+    db: Session = Depends(get_db),
+):
+    inspection = db.get(Inspection, inspection_id)
+
+    if inspection is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Inspection not found",
+        )
+
+    evidence_files = (
+        db.query(Evidence)
+        .filter(Evidence.inspection_id == inspection_id)
+        .order_by(Evidence.id.asc())
+        .all()
+    )
+
+    return [
+        {
+            "id": evidence.id,
+            "inspection_id": evidence.inspection_id,
+            "evidence_type": evidence.evidence_type,
+            "original_filename": evidence.original_filename,
+            "mime_type": evidence.mime_type,
+            "storage_key": evidence.storage_key,
+        }
+        for evidence in evidence_files
+    ]
